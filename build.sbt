@@ -8,5 +8,6 @@ libraryDependencies +=  "net.databinder.dispatch" %% "dispatch-core" % "0.11.2"
 libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.1.2"
 
 libraryDependencies += "org.scala-sbt" % "command" % "0.12.0"
+libraryDependencies += "net.liftweb" %% "lift-json" % "2.6"
 
 mainClass in assembly := Some("com.jmengers.sonoscli.Main")
