@@ -1,0 +1,74 @@
+The problem consists of states statechanges. 
+
+
+State 0:
+User starts the application and is prompted to enter the artist he is looking for. 
+
+Change 0:
+Application queries spotify for a list of artists that match the query the user entered. 
+
+State 1: 
+The results are presented and the user is prompted to select an artist (C1a) or to return to the artistprompt (C1b).
+
+Change 1a:
+Application queries spotify for a list of albums for the given artist.
+
+Change 1b:
+Application goes back to State 0.
+
+State 2: 
+The albums are presented and the user is prompted to select one (C2a) or to return to the artistselection (C2b)
+
+Change 2a:
+Application queries Spotify for the tracks that are one the given album.
+
+Change 2b:
+Application goes back to State 1
+
+State 3: 
+The tracks are presented and the is prompted to select one or all of them (C3a) or to return to the albumselection (C3b).
+
+Change 3a:
+Application sends a queue-request with the given track(s) to the Sonos and exits.
+
+Change 3b:
+Application goes back to State 2.
+
+
+
+So, how can we model this. 
+
+The endresult of the application is an asynchronous side-effect, so we can model that as a Future[Unit].
+When we drill down, the application is an asynchronous (user input and network calls) list of States and statechanges.
+
+A state is presentable to the user and contains all that is needed to prompt the user for input.
+
+A statechange can be seen as a (purish) function that given the user input produces a new state.
+
+What's left then is a framework that given a state, a state representation function, and a statechange function manages the flow through the application.
+
+A statechange function is a function that takes an input as provided by the framework (an artist, an album, a track, a list of tracks) and produces a new state. 
+
+The framework takes care of converting user input (e.g. a string for an artist query, an int for selection) and transforms that into an object that's relevant in the given context (e.g. 3 might be a case class representing the artist Prince for example).
+
+
+Because we can go back and forth through the states, we need some way to track the history of the states. We represent it as a stack on which we push new states and pop them once we need to go back. The framework is responsible for orchestrating the flow through the states, so whenever we are in a statechange situation, the stack is passed to the framework in order to be able to produce a new state via the statechange function.
+
+Because the current state changes over time, it makes sense to model it as an observable. 
+
+Sequentially, statechanges would look something like this.
+
+1. A new state is pushed to the observable of states
+2. The framework looks for a function that can represent the state (in a map of State to StateRepresentation function)
+3. The framework waits for userinput and determines whether we want to go back. If so it pops the last state of the stack and pushes it to the observable (so we go back to state 1.)
+4. If not, it looks for a function that can turn the input back into a context-relevant case class.
+5. The framework looks for a statechange function that can produce a new state based on the current state, and it calls the function with the result of the previous step.
+6. The framework adds the current state to the stack and pushes the new state (including the stack?) to the observable, so that we go back to step 1.
+
+
+
+
+
+
+
+
